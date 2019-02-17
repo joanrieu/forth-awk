@@ -39,40 +39,20 @@ function isInSkippedBranch(_, i) {
   return 0
 }
 
-function run(word, _, i, tmp1, tmp2) {
+function run(word, _, i, tos, nos) {
   if (word in WORDS)
     for (i in WORDS[word])
       interpret(WORDS[word][i])
   else switch (word) {
-  case ".":
-    print pop()
-    break
-  case "DUP":
-    STACK[length(STACK)]=STACK[length(STACK)-1]
-    break
-  case "DROP":
-    delete STACK[length(STACK)-1]
-    break
-  case "SWAP":
-    tmp1=pop()
-    tmp2=pop()
-    push(tmp1)
-    push(tmp2)
-    break
-  case "+":
-    push(pop() + pop())
-    break
-  case "*":
-    push(pop() * pop())
-    break
-  case "=":
-    push(pop() == pop())
-    break
-  case "<":
-    push(pop() > pop())
-    break
-  default:
-    abort(word"?")
+  case ".": print pop() ; break
+  case "DROP": pop() ; break
+  case "DUP": tos=pop() ; push(tos) ; push(tos) ; break
+  case "SWAP": tos=pop() ; nos=pop() ; push(tos) ; push(nos) ; break
+  case "+": tos=pop() ; nos=pop() ; push(nos + tos) ; break
+  case "*": tos=pop() ; nos=pop() ; push(nos * tos) ; break
+  case "=": tos=pop() ; nos=pop() ; push(nos == tos) ; break
+  case "<": tos=pop() ; nos=pop() ; push(nos < tos) ; break
+  default: abort(word"?")
   }
 }
 
