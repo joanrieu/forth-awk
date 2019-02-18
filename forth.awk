@@ -1,8 +1,12 @@
 BEGIN {
   FS=""
+  PARSER_POSITION=0
+  PARSER_STATE="interpret"
   delete TOKENS
   delete WORDS
   delete STACK
+  delete IFS
+  delete LOOPS
 }
 
 {
@@ -65,65 +69,50 @@ function push(arr, elem) {
 }
 
 function pop(arr, _, val) {
+  if (length(arr) == 0)
+    error("cannot pop value from empty stack")
   val=arr[length(arr)-1]
   delete arr[length(arr)-1]
   debug("pop", val)
   return val
 }
 
-function parse(_, state, i, j, token, compiled_word, compiled_body, arg) {
-  state="interpret"
-  for (i in TOKENS) {
-    token=TOKENS[i]
-    debug("parse", state, token)
-    switch (state) {
+function peek(arr) {
+  if (length(arr) > 0)
+    return arr[length(arr)-1]
+}
+
+function parse(_, state, token) {
+  for (; PARSER_POSITION < length(TOKENS); ++PARSER_POSITION) {
+    token=TOKENS[PARSER_POSITION]
+    debug("parse", PARSER_STATE, token)
+    switch (PARSER_STATE) {
     case "interpret":
       switch (token) {
       case ":":
-        state="compile"
+        PARSER_STATE="compile"
         break
       case ".\"":
-        arg=TOKENS[i+1]
-        delete TOKENS[i+1]
-        run(token, arg)
-        break
-      case "":
+        run(token, TOKENS[PARSER_POSITION+1])
+        ++PARSER_POSITION
         break
       default:
         run(token)
       }
       break
     case "compile":
-      compiled_word=token
-      delete compiled_body
-      state="compile-body"
+      WORDS[token]=PARSER_POSITION+1
+      PARSER_STATE="compile-body"
       break
     case "compile-body":
-      switch (token) {
-      case ";":
-        for (j in compiled_body)
-          WORDS[compiled_word][j]=compiled_body[j]
-        printf(": %s", compiled_word)
-        for (j in compiled_body)
-          printf(" %s", compiled_body[j])
-        print " ;"
-        state="interpret"
-        break
-      default:
-        push(compiled_body, token)
-      }
+      if (token == ";")
+        PARSER_STATE="interpret"
       break
     }
   }
-  if (state == "interpret")
-    for (j in TOKENS)
-      if (j <= i)
-        delete TOKENS[j]
-  # else reprocess everything
 }
 
 function run(word, arg, _, tos, nos, i) {
-  # DEBUG=1
   debug("run", word, arg)
   switch (word) {
   case "+": tos=pop(STACK) ; nos=pop(STACK) ; push(STACK, nos + tos) ; break
@@ -132,17 +121,16 @@ function run(word, arg, _, tos, nos, i) {
   case "DUP": tos=pop(STACK) ; push(STACK, tos) ; push(STACK, tos) ; break
   case "SWAP": tos=pop(STACK) ; nos=pop(STACK) ; push(STACK, tos) ; push(STACK, nos) ; break
   case ".": tos=pop(STACK) ; printf(tos == int(tos) ? "%d" : "%f", tos) ; break
+  case ".\"": printf("%s", arg) ; break
   default:
     if (word == word+0)
       push(STACK, word+0)
     else if (word in WORDS)
-      for (i in WORDS[word])
-        run(WORDS[word][i])
+      for (i = WORDS[word]; TOKENS[i] != ";"; ++i)
+        run(TOKENS[i])
     else
       error("unknown word: " word)
   }
-  debug()
-  # DEBUG=0
 }
 
 function error(msg) {
