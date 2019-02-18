@@ -1,10 +1,20 @@
+# SUPPORTED (not fully implemented but easy to do)
+# stack ops
+# arithmetic
+# comparison
+# output
+
 # KNOWN PROBLEMS
 # minimal support for strings: ." works but consecutive spaces are collapsed
+# syntax errors (such as unterminated branches or loops) can lead to undefined behavior
 
-function interpret(word, _) {
-  # print "interpret",word
+function interpret(word) {
+  DEPTH=DEPTH+1
+  # print "<"DEPTH">", "interpret", word
   # print length(BRANCHES)
   if (STRING) {
+    # must be first in case the string contains a keyword
+    # this block is not entered when evaluating a skipped branch
     STRING=STRING " " word
     if (match(word, "\"$")) {
       print substr(STRING, 4, length(STRING)-4)
@@ -19,9 +29,10 @@ function interpret(word, _) {
       abort("mismatched THEN statement")
     delete BRANCHES[length(BRANCHES)-1]
   } else if (word == "IF") {
-    BRANCHES[length(BRANCHES)]=isInSkippedBranch() || !!pop()
-  } else if (isInSkippedBranch()) {
+    BRANCHES[length(BRANCHES)]=is_in_skipped_branch() || !!pop()
+  } else if (is_in_skipped_branch()) {
     # print "skip"
+    # EVERYTHING BELOW WILL BE SKIPPED IF THE BRANCH IS SKIPPED
   } else if (word == word + 0)
     push(word + 0)
   else if (word == ".\"")
@@ -30,9 +41,10 @@ function interpret(word, _) {
     run(word)
   # dump_stack()
   # print ""
+  DEPTH=DEPTH-1
 }
 
-function isInSkippedBranch(_, i) {
+function is_in_skipped_branch(_, i) {
   for (i in BRANCHES)
     if (!BRANCHES[i])
       return 1
@@ -49,14 +61,16 @@ function run(word, _, i, tos, nos) {
   case "DUP": tos=pop() ; push(tos) ; push(tos) ; break
   case "SWAP": tos=pop() ; nos=pop() ; push(tos) ; push(nos) ; break
   case "+": tos=pop() ; nos=pop() ; push(nos + tos) ; break
+  case "-": tos=pop() ; nos=pop() ; push(nos - tos) ; break
   case "*": tos=pop() ; nos=pop() ; push(nos * tos) ; break
   case "=": tos=pop() ; nos=pop() ; push(nos == tos) ; break
   case "<": tos=pop() ; nos=pop() ; push(nos < tos) ; break
-  default: abort(word"?")
+  default: abort("unknown word: "word)
   }
 }
 
 function dump_stack() {
+  print "stack"
   for (i in STACK)
     print i": "STACK[length(STACK)-1-i]
 }
@@ -89,7 +103,8 @@ function compile_end(_, i, j) {
 }
 
 function abort(reason) {
-  print reason > "/dev/stderr"
+  fflush()
+  print "error: "reason > "/dev/stderr"
   exit 1
 }
 
