@@ -7,9 +7,9 @@ BEGIN {
 function reset() {
   DEPTH=0
   delete TOKEN_BUFFER
-  delete CONTROL_ID
-  delete CONTROL_TABLE
-  delete CONTROL_REF
+  delete CURRENT_GROUP_ID
+  delete GROUP
+  delete GROUP_ID
 }
 
 {
@@ -26,68 +26,74 @@ function parse(_) {
 function updateControlStructures(_, token) {
   token=$1
   switch (token) {
-  # ---- increase depth ----
   case ":":
     assert(DEPTH == 0)
+    createGroup()
+    saveTokenToGroup(token)
+    break
   case "IF":
   case "BEGIN":
-    ++DEPTH
-    CONTROL_ID[DEPTH]=NR
-    CONTROL_REF[NR]=CONTROL_ID[DEPTH]
-    CONTROL_TABLE[CONTROL_REF[NR]][token]=NR
+    createGroup()
+    saveTokenToGroup(token)
     break
-  # ---- keep depth ----
   case "ELSE":
-    assert(DEPTH)
-    CONTROL_REF[NR]=CONTROL_ID[DEPTH]
-    assert("IF" in CONTROL_TABLE[CONTROL_REF[NR]])
-    assert(!("ELSE" in CONTROL_TABLE[CONTROL_REF[NR]]))
-    CONTROL_TABLE[CONTROL_REF[NR]][token]=NR
+    assert(DEPTH > 0 && isAlreadyInGroup("IF") && !isAlreadyInGroup("ELSE"))
+    saveTokenToGroup(token)
     break
-  # ---- decrease depth ----
   case ";":
-    assert(DEPTH == 1)
-    CONTROL_REF[NR]=CONTROL_ID[DEPTH]
-    assert(":" in CONTROL_TABLE[CONTROL_REF[NR]])
-    CONTROL_TABLE[CONTROL_REF[NR]][token]=NR
-    --DEPTH
+    assert(DEPTH == 1 && isAlreadyInGroup(":"))
+    saveTokenToGroup(token)
+    closeGroup()
     break
   case "THEN":
-    assert(DEPTH)
-    CONTROL_REF[NR]=CONTROL_ID[DEPTH]
-    assert("IF" in CONTROL_TABLE[CONTROL_REF[NR]])
-    CONTROL_TABLE[CONTROL_REF[NR]][token]=NR
-    --DEPTH
+    assert(DEPTH > 0 && isAlreadyInGroup("IF"))
+    saveTokenToGroup(token)
+    closeGroup()
     break
   case "UNTIL":
-    assert(DEPTH)
-    CONTROL_REF[NR]=CONTROL_ID[DEPTH]
-    assert("BEGIN" in CONTROL_TABLE[CONTROL_REF[NR]])
-    CONTROL_TABLE[CONTROL_REF[NR]][token]=NR
-    --DEPTH
+    assert(DEPTH > 0 && isAlreadyInGroup("BEGIN"))
+    saveTokenToGroup(token)
+    closeGroup()
     break
   }
 }
 
+function createGroup() {
+  CURRENT_GROUP_ID[++DEPTH]=NR
+}
+
+function saveTokenToGroup(token) {
+  GROUP_ID[NR]=CURRENT_GROUP_ID[DEPTH]
+  GROUP[GROUP_ID[NR]][token]=NR
+}
+
+function isAlreadyInGroup(token) {
+  return token in GROUP[CURRENT_GROUP_ID[DEPTH]]
+}
+
+function closeGroup() {
+  delete CURRENT_GROUP_ID[DEPTH--]
+}
+
 function printBufferedTokens(_, i) {
-  if (!DEPTH) {
+  if (DEPTH == 0) {
     for (i in TOKEN_BUFFER) {
       print TOKEN_BUFFER[i]
-      if (i in CONTROL_REF) {
+      if (i in GROUP_ID) {
         switch (TOKEN_BUFFER[i]) {
           case ":":
-            print CONTROL_TABLE[CONTROL_REF[i]][";"]
+            print GROUP[GROUP_ID[i]][";"]
             break
           case "IF":
-            if ("ELSE" in CONTROL_TABLE[CONTROL_REF[i]])
-              print CONTROL_TABLE[CONTROL_REF[i]]["ELSE"]
+            if ("ELSE" in GROUP[GROUP_ID[i]])
+              print GROUP[GROUP_ID[i]]["ELSE"]
             else
-              print CONTROL_TABLE[CONTROL_REF[i]]["THEN"]
+              print GROUP[GROUP_ID[i]]["THEN"]
             break
           case "ELSE":
-            print CONTROL_TABLE[CONTROL_REF[i]]["THEN"]
+            print GROUP[GROUP_ID[i]]["THEN"]
           case "UNTIL":
-            print CONTROL_TABLE[CONTROL_REF[i]]["BEGIN"]
+            print GROUP[GROUP_ID[i]]["BEGIN"]
             break
         }
       }
