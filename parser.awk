@@ -75,12 +75,17 @@ function printBufferedTokens(_, i) {
       print TOKEN_BUFFER[i]
       if (i in CONTROL_REF) {
         switch (TOKEN_BUFFER[i]) {
+          case ":":
+            print CONTROL_TABLE[CONTROL_REF[i]][";"]
+            break
           case "IF":
             if ("ELSE" in CONTROL_TABLE[CONTROL_REF[i]])
               print CONTROL_TABLE[CONTROL_REF[i]]["ELSE"]
             else
               print CONTROL_TABLE[CONTROL_REF[i]]["THEN"]
             break
+          case "ELSE":
+            print CONTROL_TABLE[CONTROL_REF[i]]["THEN"]
           case "UNTIL":
             print CONTROL_TABLE[CONTROL_REF[i]]["BEGIN"]
             break
