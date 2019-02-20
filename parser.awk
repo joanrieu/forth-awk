@@ -26,6 +26,9 @@ function parse(_) {
 function updateControlStructures(_, token) {
   token=$1
   switch (token) {
+  # ---- increase depth ----
+  case ":":
+    assert(DEPTH == 0)
   case "IF":
   case "BEGIN":
     ++DEPTH
@@ -33,6 +36,7 @@ function updateControlStructures(_, token) {
     CONTROL_REF[NR]=CONTROL_ID[DEPTH]
     CONTROL_TABLE[CONTROL_REF[NR]][token]=NR
     break
+  # ---- keep depth ----
   case "ELSE":
     assert(DEPTH)
     CONTROL_REF[NR]=CONTROL_ID[DEPTH]
@@ -40,11 +44,18 @@ function updateControlStructures(_, token) {
     assert(!("ELSE" in CONTROL_TABLE[CONTROL_REF[NR]]))
     CONTROL_TABLE[CONTROL_REF[NR]][token]=NR
     break
+  # ---- decrease depth ----
+  case ";":
+    assert(DEPTH == 1)
+    CONTROL_REF[NR]=CONTROL_ID[DEPTH]
+    assert(":" in CONTROL_TABLE[CONTROL_REF[NR]])
+    CONTROL_TABLE[CONTROL_REF[NR]][token]=NR
+    --DEPTH
+    break
   case "THEN":
     assert(DEPTH)
     CONTROL_REF[NR]=CONTROL_ID[DEPTH]
     assert("IF" in CONTROL_TABLE[CONTROL_REF[NR]])
-    assert(!("THEN" in CONTROL_TABLE[CONTROL_REF[NR]]))
     CONTROL_TABLE[CONTROL_REF[NR]][token]=NR
     --DEPTH
     break
@@ -52,7 +63,6 @@ function updateControlStructures(_, token) {
     assert(DEPTH)
     CONTROL_REF[NR]=CONTROL_ID[DEPTH]
     assert("BEGIN" in CONTROL_TABLE[CONTROL_REF[NR]])
-    assert(!("UNTIL" in CONTROL_TABLE[CONTROL_REF[NR]]))
     CONTROL_TABLE[CONTROL_REF[NR]][token]=NR
     --DEPTH
     break
