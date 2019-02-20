@@ -15,8 +15,7 @@ function tokenize(_, state, token, i) {
   for (i=1; i<=NF; ++i) {
     switch (state) {
     case "word":
-      switch ($i) {
-      case " ":
+      if ($i ~ /\s/) {
         if (token) {
           switch (token) {
           case ".\"":
@@ -26,35 +25,33 @@ function tokenize(_, state, token, i) {
           case "(":
             state="comment"
             break
+          case "\\":
+            i=NF
+            break
           default:
             print token
             print ""
           }
           token=""
         }
-        break
-      default:
+      } else {
         token=token $i
       }
       break
     case "string":
-      switch ($i) {
-      case "\"":
+      if ($i == "\"") {
         state="word"
         print token
         print ""
         token=""
-        break
-      default:
+      } else {
         token=token $i
       }
       break
     case "comment":
-      switch ($i) {
-        case ")":
-          state="word"
-          break
-      }
+      if ($i == ")")
+        state="word"
+      break
     }
   }
 }
