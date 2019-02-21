@@ -1,12 +1,12 @@
 BEGIN {
-  FS="\n"
-  RS=""
+  FS="\0"
   reset()
 }
 
 function reset() {
   DEPTH=0
   delete TOKEN_BUFFER
+  delete ARG_BUFFER
   delete CURRENT_GROUP_ID
   delete GROUP
   delete GROUP_ID
@@ -23,7 +23,8 @@ END {
 }
 
 function parse(_) {
-  TOKEN_BUFFER[NR]=$0
+  TOKEN_BUFFER[NR]=$1
+  ARG_BUFFER[NR]=$2
   updateControlStructures()
   printBufferedTokens()
 }
@@ -87,40 +88,39 @@ function closeGroup() {
   delete CURRENT_GROUP_ID[DEPTH--]
 }
 
-function printBufferedTokens(_, i) {
+function printBufferedTokens(_, token, arg, i) {
   if (DEPTH == 0) {
     for (i in TOKEN_BUFFER) {
-      print TOKEN_BUFFER[i]
-      if (i in GROUP_ID) {
-        switch (TOKEN_BUFFER[i]) {
-          case ":":
-            print GROUP[GROUP_ID[i]][";"]
-            break
-          case "IF":
-            if ("ELSE" in GROUP[GROUP_ID[i]])
-              print GROUP[GROUP_ID[i]]["ELSE"]
-            else
-              print GROUP[GROUP_ID[i]]["THEN"]
-            break
-          case "ELSE":
-            print GROUP[GROUP_ID[i]]["THEN"]
-            break
-          case "UNTIL":
-            print GROUP[GROUP_ID[i]]["BEGIN"]
-            break
-          case "DO":
-            if ("LOOP" in GROUP[GROUP_ID[i]])
-              print GROUP[GROUP_ID[i]]["LOOP"]
-            else
-              print GROUP[GROUP_ID[i]]["+LOOP"]
-            break
-          case "LOOP":
-          case "+LOOP":
-            print GROUP[GROUP_ID[i]]["DO"]
-            break
-        }
+      token=TOKEN_BUFFER[i]
+      arg=ARG_BUFFER[i]
+      switch (token) {
+        case ":":
+          arg=GROUP[GROUP_ID[i]][";"]
+          break
+        case "IF":
+          if ("ELSE" in GROUP[GROUP_ID[i]])
+            arg=GROUP[GROUP_ID[i]]["ELSE"]
+          else
+            arg=GROUP[GROUP_ID[i]]["THEN"]
+          break
+        case "ELSE":
+          arg=GROUP[GROUP_ID[i]]["THEN"]
+          break
+        case "UNTIL":
+          arg=GROUP[GROUP_ID[i]]["BEGIN"]
+          break
+        case "DO":
+          if ("LOOP" in GROUP[GROUP_ID[i]])
+            arg=GROUP[GROUP_ID[i]]["LOOP"]
+          else
+            arg=GROUP[GROUP_ID[i]]["+LOOP"]
+          break
+        case "LOOP":
+        case "+LOOP":
+          arg=GROUP[GROUP_ID[i]]["DO"]
+          break
       }
-      print ""
+      printf("%s\0%s\n", token, arg)
     }
     reset()
   }

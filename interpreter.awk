@@ -1,6 +1,5 @@
 BEGIN {
-  FS="\n"
-  RS=""
+  FS="\0"
   STATE="interpret"
   IPTR=1
   delete WORD_BUFFER
@@ -17,7 +16,7 @@ BEGIN {
   while (IPTR in WORD_BUFFER) {
     WORD=WORD_BUFFER[IPTR]
     ARG=ARG_BUFFER[IPTR]
-    # print IPTR, STATE, WORD, ARG > "/dev/stderr"
+    # print "IPTR=" IPTR " STATE=" STATE " WORD=" WORD " ARG=" ARG > "/dev/stderr"
     @STATE()
   }
   fflush()
@@ -132,7 +131,7 @@ function interpret_builtin_word(_, tos, nos) {
   case ".": tos=pop() ; printf(tos % 1 ? "%f" : "%d", tos) ; break
   case ".\"": printf("%s", ARG) ; break
   case "EMIT": tos=pop() ; printf("%c", tos) ; break
-  case "CR": print "" ; break
+  case "CR": printf("\n") ; break
   # control
   case "BYE": exit
   default: return

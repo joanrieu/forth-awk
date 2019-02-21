@@ -20,7 +20,7 @@ function tokenize(_, state, token, i) {
           switch (token) {
           case ".\"":
             state="string"
-            print token
+            printf("%s\0", token)
             break
           case "(":
             state="comment"
@@ -29,8 +29,7 @@ function tokenize(_, state, token, i) {
             i=NF
             break
           default:
-            print token
-            print ""
+            printf("%s\n", token)
           }
           token=""
         }
@@ -41,8 +40,7 @@ function tokenize(_, state, token, i) {
     case "string":
       if ($i == "\"") {
         state="word"
-        print token
-        print ""
+        printf("%s\n", token)
         token=""
       } else {
         token=token $i
