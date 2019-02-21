@@ -38,6 +38,7 @@ function updateControlStructures(_, token) {
     break
   case "IF":
   case "BEGIN":
+  case "DO":
     createGroup()
     saveTokenToGroup(token)
     break
@@ -57,6 +58,12 @@ function updateControlStructures(_, token) {
     break
   case "UNTIL":
     assert(DEPTH > 0 && isAlreadyInGroup("BEGIN"))
+    saveTokenToGroup(token)
+    closeGroup()
+    break
+  case "LOOP":
+  case "+LOOP":
+    assert(DEPTH > 0 && isAlreadyInGroup("DO"))
     saveTokenToGroup(token)
     closeGroup()
     break
@@ -97,8 +104,19 @@ function printBufferedTokens(_, i) {
             break
           case "ELSE":
             print GROUP[GROUP_ID[i]]["THEN"]
+            break
           case "UNTIL":
             print GROUP[GROUP_ID[i]]["BEGIN"]
+            break
+          case "DO":
+            if ("LOOP" in GROUP[GROUP_ID[i]])
+              print GROUP[GROUP_ID[i]]["LOOP"]
+            else
+              print GROUP[GROUP_ID[i]]["+LOOP"]
+            break
+          case "LOOP":
+          case "+LOOP":
+            print GROUP[GROUP_ID[i]]["DO"]
             break
         }
       }
