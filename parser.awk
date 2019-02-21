@@ -17,6 +17,11 @@ function reset() {
   fflush()
 }
 
+END {
+  $1="end of input"
+  assert(DEPTH == 0)
+}
+
 function parse(_) {
   TOKEN_BUFFER[NR]=$0
   updateControlStructures()
