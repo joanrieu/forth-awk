@@ -1,0 +1,3 @@
+#!/bin/sh
+
+awk -f ./lexer.awk | awk -f ./parser.awk | awk -f ./interpreter.awk

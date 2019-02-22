@@ -7,7 +7,7 @@ Forth interpreter written in Awk
 Run the REPL like this:
 
 ```console
-$ awk -f lexer.awk | awk -f parser.awk | awk -f interpreter.awk
+$ ./forth-awk
 ```
 
 ## FEATURES
