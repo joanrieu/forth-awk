@@ -2,6 +2,8 @@
 
 Forth interpreter written in Awk
 
+![](https://i.imgur.com/V7i0R62.gif)
+
 ## USAGE
 
 Run the REPL like this:
@@ -9,6 +11,8 @@ Run the REPL like this:
 ```console
 $ ./forth-awk
 ```
+
+Then just start typing Forth code!
 
 ## FEATURES
 
@@ -23,3 +27,8 @@ $ ./forth-awk
   - `BEGIN` ... `UNTIL`
   - `DO` ... `LOOP`
   - `DO` ... `+LOOP`
+
+## REQUIREMENTS
+
+This software has only been tested using GNU Awk.
+It may or may not work with other implementations.
