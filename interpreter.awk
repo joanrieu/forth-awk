@@ -6,8 +6,6 @@ BEGIN {
   delete ARG_BUFFER
   delete STACK
   delete RSTACK
-  delete LOOP_INDEX
-  delete LOOP_LIMIT
 }
 
 {
@@ -23,11 +21,11 @@ BEGIN {
 }
 
 function interpret() {
-  interpret_function_definition() || interpret_if_else_then() || interpret_begin_until() || interpret_do_loop() || interpret_builtin_word() || interpret_number() || interpret_user_defined_word() || error("unknown word")
+  interpret_word_definition() || interpret_if_else_then() || interpret_begin_until() || interpret_do_loop() || interpret_builtin_word() || interpret_number() || interpret_user_defined_word() || error("unknown word")
 }
 
 # : word foo bar ;
-function interpret_function_definition() {
+function interpret_word_definition() {
   switch (WORD) {
   case ":":
     ++IPTR
@@ -76,34 +74,39 @@ function interpret_begin_until() {
 # limit start DO foo bar increment +LOOP
 # I --> index inside loop
 # J --> index of outer loop when nested
-function interpret_do_loop() {
+function interpret_do_loop(_, i, limit) {
   switch (WORD) {
   case "DO":
-    LOOP_INDEX[length(LOOP_INDEX)+1]=pop()
-    LOOP_LIMIT[length(LOOP_LIMIT)+1]=pop()
+    i=pop()
+    limit=pop()
+    rpush(limit)
+    rpush(i)
     ++IPTR
     return 1
   case "I":
-    if (length(LOOP_INDEX) < 1)
-      error("no loop")
-    push(LOOP_INDEX[length(LOOP_INDEX)])
+    push(rpeek())
     ++IPTR
     return 1
   case "J":
-    if (length(LOOP_INDEX) < 2)
-      error("no outer loop")
-    push(LOOP_INDEX[length(LOOP_INDEX)-1])
+    i=rpop()
+    limit=rpop()
+    push(rpeek())
+    rpush(limit)
+    rpush(i)
     ++IPTR
     return 1
   case "LOOP":
   case "+LOOP":
-    LOOP_INDEX[length(LOOP_INDEX)]+=(WORD == "LOOP" ? 1 : pop())
-    if (LOOP_INDEX[length(LOOP_INDEX)] != LOOP_LIMIT[length(LOOP_LIMIT)]) {
+    i=rpop()
+    limit=rpeek()
+    i+=(WORD == "LOOP" ? 1 : pop())
+    rpush(i)
+    if (i != limit) {
       IPTR=ARG+1
     } else {
       ++IPTR
-      delete LOOP_INDEX[length(LOOP_INDEX)]
-      delete LOOP_LIMIT[length(LOOP_LIMIT)]
+      rpop()
+      rpop()
     }
     return 1
   }
@@ -166,10 +169,14 @@ function push(value) {
   STACK[length(STACK)+1]=value
 }
 
-function pop(_, value) {
+function peek() {
   if (!length(STACK))
     error("stack underflow")
-  value=STACK[length(STACK)]
+  return STACK[length(STACK)]
+}
+
+function pop(_, value) {
+  value=peek()
   delete STACK[length(STACK)]
   return value
 }
@@ -178,10 +185,14 @@ function rpush(value) {
   RSTACK[length(RSTACK)+1]=value
 }
 
-function rpop(_, value) {
+function rpeek() {
   if (!length(RSTACK))
     error("return stack underflow")
-  value=RSTACK[length(RSTACK)]
+  return RSTACK[length(RSTACK)]
+}
+
+function rpop(_, value) {
+  value=rpeek()
   delete RSTACK[length(RSTACK)]
   return value
 }
